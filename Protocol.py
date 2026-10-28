@@ -1,6 +1,6 @@
 
+# Protocol class
 import socket
-
 from ProtocolMessage import ProtocolMessage
 
 

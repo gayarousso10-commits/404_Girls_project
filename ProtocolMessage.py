@@ -1,3 +1,5 @@
+# ProtocolMessage class
+
 from Protocol import ProtocolError
 
 class ProtocolMessage:
