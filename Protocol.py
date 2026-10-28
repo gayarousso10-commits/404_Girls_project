@@ -1,22 +1,39 @@
+
 import socket
-from protocol_error import ProtocolError
-from protocol_message import ProtocolMessage
+
+from ProtocolMessage import ProtocolMessage
+
+
+class ProtocolError(Exception):
+    pass
+
 
 class Protocol:
     HEADER_SIZE = 4
     BYTE_ORDER = "big"
-    MAX_LENGTH = 1024 * 1024  # הגבלת אורך הגיונית לתוכן (1MB) כפי שמופיע בתרשימים
+    MAX_LENGTH = 1024 * 1024  # 1MB
 
     @staticmethod
     def _recv_exact(sock, n):
-        """פעולה סטטית פרטית: קבלת בדיוק n בתים מה-Socket."""
+        """Receives exactly n bytes from the socket."""
+
+        if not isinstance(n, int) or n < 0:
+            raise ValueError("n must be a non-negative integer")
+
         data = bytearray()
 
         while len(data) < n:
             chunk = sock.recv(n - len(data))
 
             if not chunk:
-                return None
+                # החיבור נסגר לפני שהתקבל מידע כלשהו
+                if not data:
+                    return None
+
+                # החיבור נסגר לאחר קבלת מידע חלקי
+                raise ProtocolError(
+                    "Connection closed before receiving all bytes"
+                )
 
             data.extend(chunk)
 
@@ -24,39 +41,68 @@ class Protocol:
 
     @staticmethod
     def send(sock, message):
-        """פעולה סטטית: שליחת הודעה עם כותרת המציינת את אורך ההודעה."""
+        """Sends a message with a 4-byte length header."""
+
         if not isinstance(message, ProtocolMessage):
-            raise TypeError("ההודעה חייבת להיות מסוג ProtocolMessage")
+            raise TypeError(
+                "The message must be of type ProtocolMessage"
+            )
 
         raw_body = message.to_bytes()
 
         if len(raw_body) > Protocol.MAX_LENGTH:
-            raise ProtocolError("The message body is too large to be sent")
+            raise ProtocolError(
+                "The message body is too large to be sent"
+            )
 
-        # שימוש בשיטה המובנית שלך להמרת מספר לבייטים
-        header = len(raw_body).to_bytes(Protocol.HEADER_SIZE, Protocol.BYTE_ORDER)
+        # יצירת כותרת בת 4 בתים המציינת את אורך ההודעה
+        header = len(raw_body).to_bytes(
+            Protocol.HEADER_SIZE,
+            Protocol.BYTE_ORDER
+        )
 
+        # שליחת הכותרת וגוף ההודעה
         sock.sendall(header + raw_body)
 
     @staticmethod
     def receive(sock):
-        """פעולה סטטית: קבלת הודעה מלאה מה-Socket והחזרת אובייקט ProtocolMessage."""
-        header = Protocol._recv_exact(sock, Protocol.HEADER_SIZE)
+        """Receives a complete message from the socket."""
 
+        # קריאת הכותרת
+        header = Protocol._recv_exact(
+            sock,
+            Protocol.HEADER_SIZE
+        )
+
+        # None מציין שהחיבור נסגר לפני שהתקבלה כותרת
         if header is None:
             return None
 
-        length = int.from_bytes(header, Protocol.BYTE_ORDER)
+        length = int.from_bytes(
+            header,
+            Protocol.BYTE_ORDER
+        )
 
-        if length < 0 or length > Protocol.MAX_LENGTH:
-            raise ProtocolError(f"Invalid message length received in header: {length}")
+        # בדיקת אורך ההודעה
+        if length > Protocol.MAX_LENGTH:
+            raise ProtocolError(
+                f"Invalid message length received in header: {length}"
+            )
 
+        # קריאת גוף ההודעה
         raw_body = Protocol._recv_exact(sock, length)
 
         if raw_body is None:
-            return None
+            # הכותרת התקבלה, אך החיבור נסגר לפני שהתקבל הגוף
+            raise ProtocolError(
+                "Connection closed before receiving the message body"
+            )
 
+        # פענוח גוף ההודעה
         try:
             return ProtocolMessage.from_bytes(raw_body)
+
         except ProtocolError as e:
-            raise ProtocolError(f"Failed to parse incoming message protocol: {e}")
+            raise ProtocolError(
+                f"Failed to parse incoming message protocol: {e}"
+            ) from e
