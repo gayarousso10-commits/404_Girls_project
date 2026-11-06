@@ -2,10 +2,9 @@ import socket
 from Protocol import Protocol, ProtocolError
 from ProtocolMessage import ProtocolMessage
 
-def run_tests():
-    print("--- מתחיל בדיקות פרוטוקול מקיפות לשלב ג' ---\n")
 
-    # 1. בדיקת פקודות תקינות וקידוד/פענוח (PING, ECHO, TIME, EXIT)
+def test_commands_encoding_decoding():
+    """בדיקת פקודות תקינות וקידוד/פענוח (PING, ECHO, TIME, EXIT)"""
     commands_to_test = [
         ProtocolMessage("PING"),
         ProtocolMessage("ECHO", "Hello CyberVault!"),
@@ -14,38 +13,47 @@ def run_tests():
     ]
 
     for msg in commands_to_test:
-        print(f"בודק הודעה מקורית: {msg!r}")
         raw_data = msg.to_bytes()
         decoded_msg = ProtocolMessage.from_bytes(raw_data)
-        assert msg == decoded_msg, "שגיאה: ההודעה המפוענחת שונה מהמקורית!"
-        print("[V] קידוד ופענוח עברו בהצלחה!\n")
+        assert msg == decoded_msg
 
-    # 2. בדיקת קלט משתמש (from_user_input)
-    print("בודק קלט משתמש...")
+
+def test_user_input_parsing():
+    """בדיקת קלט משתמש"""
     user_msg = ProtocolMessage.from_user_input("  echo   בדיקת מערכת מאובטחת  ")
     assert user_msg.command == "ECHO"
     assert user_msg.data == "בדיקת מערכת מאובטחת"
-    print(f"[V] קלט משתמש פוענח בהצלחה: {user_msg}\n")
 
-    # 3. בדיקת שגיאות ווולידציות (פקודה לא מוכרת, תו מפריד אסור)
-    print("בודק תפיסת שגיאות...")
+
+def test_error_handling_unknown_command():
+    """בדיקת תפיסת פקודה לא חוקית"""
     try:
         ProtocolMessage("UNKNOWN_CMD")
-    except ProtocolError as e:
-        print(f"[V] תפס בהצלחה פקודה לא חוקית: {e}")
+        assert False, "צפויה להיות שגיאה עבור פקודה לא חוקית"
+    except ProtocolError:
+        pass
 
+
+def test_error_handling_invalid_separator():
+    """בדיקת תפיסת תו מפריד אסור"""
     try:
         ProtocolMessage("ECHO", "data|with|pipe")
-    except ProtocolError as e:
-        print(f"[V] תפס בהצלחה תו מפריד אסור בנתונים: {e}")
+        assert False, "צפויה להיות שגיאה עבור תו מפריד בנתונים"
+    except ProtocolError:
+        pass
 
+
+def test_error_handling_missing_separator():
+    """בדיקת תפיסת בתים חסרי מפריד לפענוח"""
     try:
         ProtocolMessage.from_bytes(b"INVALID_WITHOUT_PIPE")
-    except ProtocolError as e:
-        print(f"[V] תפס בהצלחה פענוח בתים חסר מפריד: {e}\n")
+        assert False, "צפויה להיות שגיאה עבור בתים ללא מפריד"
+    except ProtocolError:
+        pass
 
-    # 4. בדיקת תקשורת פרוטוקול (שליחה וקבלה באמצעות socketpair)
-    print("בודק שליחה וקבלה בשכבת הפרוטוקול...")
+
+def test_socketpair_communication():
+    """בדיקת שליחה וקבלה באמצעות socketpair"""
     client_sock, server_sock = socket.socketpair()
     try:
         original_msg = ProtocolMessage("PING", "test payload")
@@ -53,12 +61,6 @@ def run_tests():
         received_msg = Protocol.receive(server_sock)
 
         assert original_msg == received_msg
-        print(f"[V] ההודעה נשלחה והתקבלה בהצלחה דרך הפרוטוקול: {received_msg}")
     finally:
         client_sock.close()
         server_sock.close()
-
-    print("\n--- כל הבדיקות לשלב ג' הסתיימו בהצלחה מלאה! ---")
-
-if __name__ == "__main__":
-    run_tests()
