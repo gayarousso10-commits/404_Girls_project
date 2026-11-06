@@ -1,7 +1,7 @@
 from Protocol import ProtocolError
 
 class ProtocolMessage:
-    """מחלקה המייצגת הודעה בפרוטוקול התקשורת של CyberVault.
+    """מחלקת המייצגת הודעה בפרוטוקול התקשורת של CyberVault.
     אחראית על ולידציה, קידוד ופענוח של מבנה ההודעה (COMMAND|data).
     """
 
@@ -10,20 +10,16 @@ class ProtocolMessage:
     VALID_COMMANDS = {"TIME", "ECHO", "PING", "EXIT"}
 
     def __init__(self, command, data=""):
-        # בדיקת טיפוסים
         if not isinstance(command, str):
             raise ProtocolError("Command must be a string")
         if not isinstance(data, str):
             raise ProtocolError("Data must be a string")
 
-        # פקודה לאותיות גדולות (נרמול)
         normalized_command = command.upper()
 
-        # בדיקת תקינות הפקודה
         if normalized_command not in ProtocolMessage.VALID_COMMANDS:
             raise ProtocolError(f"Invalid command: '{normalized_command}'")
 
-        # בדיקה שהתו המפריד אינו מופיע בפקודה או בנתונים
         if ProtocolMessage.SEPARATOR in normalized_command:
             raise ProtocolError("Command cannot contain the separator character")
         if ProtocolMessage.SEPARATOR in data:
@@ -41,7 +37,6 @@ class ProtocolMessage:
         return self.__data
 
     def to_bytes(self):
-        """ממירה את ההודעה לבתים לקראת שליחה ברשת."""
         message_str = (
             f"{self.__command}"
             f"{ProtocolMessage.SEPARATOR}"
@@ -51,7 +46,6 @@ class ProtocolMessage:
 
     @classmethod
     def from_bytes(cls, raw):
-        """מפענחת בתים גולמיים שהתקבלו מהרשת לאובייקט ProtocolMessage."""
         if not isinstance(raw, bytes):
             raise ProtocolError("Message must be provided as bytes")
 
@@ -62,7 +56,6 @@ class ProtocolMessage:
 
         parts = decoded_str.split(cls.SEPARATOR, 1)
 
-        # בדיקה שהפקודה קיימת ולא ריקה
         if not parts[0]:
             raise ProtocolError("Invalid message format: missing command")
 
@@ -76,7 +69,6 @@ class ProtocolMessage:
 
     @classmethod
     def from_user_input(cls, line):
-        """בונה אובייקט הודעה מתוך שורת טקסט שהקליד המשתמש."""
         if not isinstance(line, str):
             raise ProtocolError("User input must be a string")
 
