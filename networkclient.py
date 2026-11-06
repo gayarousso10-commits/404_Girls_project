@@ -1,40 +1,55 @@
 import socket
 
 class NetworkClient:
+
     def __init__(self, ip: str = "127.0.0.1", port: int = 8000):
-        # תכונה פרטית המחזיקה את אובייקט ה-socket
         self.__sock = socket.socket()
-        # התחברות לשרת לפי ה-IP וה-Port שהתקבלו
-        self.__sock.connect((ip, port))
+
+        try:
+            self.__sock.connect((ip, port))
+            print("Connected to server!")
+
+        except ConnectionRefusedError:
+            print("Server is not available.")
+            self.__sock.close()
+            raise
 
     def run(self) -> None:
-        user_message = input("enter your command (TIME, ECHO, PING, EXIT): ")
+        try:
+            while True:
+                user_message = input("enter your command (TIME, ECHO, PING, EXIT): ")
 
-        # הלולאה ממשיכה כל עוד הלקוח לא מקליד Exit
-        while user_message.strip().upper() != "EXIT":
-            # שליחת ההודעה מקודדת לשרת
-            self.__sock.send(user_message.encode())
+                # שליחת הפקודה לשרת
+                self.__sock.sendall((user_message + "\n").encode("utf-8"))
+                # קבלת תשובה מהשרת
+                server_message = b""
 
-            # מקבלת תגובה מהשרת
-            server_message = self.__sock.recv(1024)
+                while b"\n" not in server_message:
+                    chunk = self.__sock.recv(1024)
 
-            # אם החיבור נסגר מהצד של השרת
-            if not server_message:
-                print("Server disconnected.")
-                break
+                    if not chunk:
+                        break
 
-            print(f"server say {server_message.decode()}")
+                    server_message += chunk
 
+                server_message = server_message.split(b"\n", 1)[0]
 
-            # קלט נוסף מהמשתמש
-            user_message = input("enter your command (TIME, ECHO, PING, EXIT): ")
+                if not server_message:
+                    print("Server disconnected.")
+                    break
 
-        # סגירת ה-socket בסיום
-        self.__sock.close()
-        print("client say bye")
+                print(f"server say {server_message.decode('utf-8')}")
+
+                # יציאה לאחר קבלת תשובת השרת
+                if user_message.strip().upper() == "EXIT":
+                    break
+
+        finally:
+            self.__sock.close()
+            print("client say bye")
 
 
 # דוגמה להרצת המחלקה:
 if __name__ == "__main__":
-    client = NetworkClient(ip="192.168.11.77", port=8000)
+    client = NetworkClient(ip="127.0.0.1", port=8000)
     client.run()

@@ -24,25 +24,43 @@ class NetworkServer:
             self.__server.close()
             print("Server say bye")
 
+    def __receive_message(self, client_socket, buffer):
+        while b"\n" not in buffer:
+            chunk = client_socket.recv(1024)
 
+            if not chunk:
+                return None, b""
 
+            buffer += chunk
+
+        message, buffer = buffer.split(b"\n", 1)
+
+        return message.decode("utf-8"), buffer
 
     def __handle_client(self, client_socket, address) -> None:
-        try:
-            client_message = client_socket.recv(1024).decode("utf-8")
+        buffer = b""
 
-            while client_message != "EXIT" and client_message != "":
+        try:
+            while True:
+                client_message, buffer = self.__receive_message(
+                    client_socket, buffer
+                )
+
+                if client_message is None:
+                    break
+
                 print(f"client say: {client_message}")
 
                 response = self.__process(client_message)
-                client_socket.send(response.encode("utf-8"))
 
-                client_message = client_socket.recv(1024).decode("utf-8")
+                client_socket.sendall((response + "\n").encode("utf-8"))
 
-            client_socket.send("BYE".encode("utf-8"))
+                if client_message.strip().upper() == "EXIT":
+                    break
 
-        except ConnectionAbortedError:
+        except (ConnectionAbortedError, ConnectionResetError):
             pass
+
 
 
     def __process(self, msg: str) -> str:
@@ -67,5 +85,5 @@ class NetworkServer:
 
 
 if __name__ == "__main__":
-    server = NetworkServer("192.168.11.77", 8000)
+    server = NetworkServer("0.0.0.0", 8000)
     server.start()
