@@ -1,55 +1,56 @@
+
 import socket
+from Protocol import Protocol, ProtocolError
+from ProtocolMessage import ProtocolMessage
+
 
 class NetworkClient:
 
-    def __init__(self, ip: str = "127.0.0.1", port: int = 8000):
-        self.__sock = socket.socket()
+    def __init__(self, ip="127.0.0.1", port=8000):
+        self.__sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         try:
             self.__sock.connect((ip, port))
             print("Connected to server!")
 
-        except ConnectionRefusedError:
-            print("Server is not available.")
+        except OSError:
             self.__sock.close()
+            print("Server is not available.")
             raise
 
-    def run(self) -> None:
+    def run(self):
         try:
             while True:
-                user_message = input("enter your command (TIME, ECHO, PING, EXIT): ")
+                user_input = input(
+                    "Enter command (TIME, ECHO, PING, EXIT): "
+                )
 
-                # שליחת הפקודה לשרת
-                self.__sock.sendall((user_message + "\n").encode("utf-8"))
-                # קבלת תשובה מהשרת
-                server_message = b""
+                try:
+                    message = ProtocolMessage.from_user_input(user_input)
 
-                while b"\n" not in server_message:
-                    chunk = self.__sock.recv(1024)
+                    # שליחת הודעה לפי הפרוטוקול
+                    Protocol.send(self.__sock, message)
 
-                    if not chunk:
+                    # קבלת תשובה לפי הפרוטוקול
+                    response = Protocol.receive(self.__sock)
+
+                    if response is None:
+                        print("Server disconnected.")
                         break
 
-                    server_message += chunk
+                    print("Server:", response.data)
 
-                server_message = server_message.split(b"\n", 1)[0]
+                    if message.command == "EXIT":
+                        break
 
-                if not server_message:
-                    print("Server disconnected.")
-                    break
-
-                print(f"server say {server_message.decode('utf-8')}")
-
-                # יציאה לאחר קבלת תשובת השרת
-                if user_message.strip().upper() == "EXIT":
-                    break
+                except ProtocolError as e:
+                    print("Protocol error:", e)
 
         finally:
             self.__sock.close()
-            print("client say bye")
+            print("Client say bye")
 
 
-# דוגמה להרצת המחלקה:
 if __name__ == "__main__":
-    client = NetworkClient(ip="127.0.0.1", port=8000)
+    client = NetworkClient()
     client.run()

@@ -1,72 +1,82 @@
+
 import socket
 from datetime import datetime
+
+from Protocol import Protocol, ProtocolError
+from ProtocolMessage import ProtocolMessage
+
 
 class NetworkServer:
 
     def __init__(self, ip="127.0.0.1", port=8000):
-
         self.__ip = ip
         self.__port = port
 
-        self.__server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.__server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.__server = socket.socket(
+            socket.AF_INET,
+            socket.SOCK_STREAM
+        )
+
+        self.__server.setsockopt(
+            socket.SOL_SOCKET,
+            socket.SO_REUSEADDR,
+            1
+        )
+
         self.__server.bind((self.__ip, self.__port))
         self.__server.listen(1)
-        print(f"server is up at {ip}:{port}")
 
-    def start(self) -> None:
+        print(f"Server is up at {ip}:{port}")
+
+    def start(self):
         client_socket, address = self.__server.accept()
-        print(f"client connected at {address}")
+
+        print(f"Client connected at {address}")
+
         try:
-            self.__handle_client(client_socket, address)
+            self.__handle_client(client_socket)
+
         finally:
             client_socket.close()
             self.__server.close()
             print("Server say bye")
 
-    def __receive_message(self, client_socket, buffer):
-        while b"\n" not in buffer:
-            chunk = client_socket.recv(1024)
-
-            if not chunk:
-                return None, b""
-
-            buffer += chunk
-
-        message, buffer = buffer.split(b"\n", 1)
-
-        return message.decode("utf-8"), buffer
-
-    def __handle_client(self, client_socket, address) -> None:
-        buffer = b""
+    def __handle_client(self, client_socket):
 
         try:
             while True:
-                client_message, buffer = self.__receive_message(
-                    client_socket, buffer
-                )
+
+                # קבלת הודעה באמצעות הפרוטוקול
+                client_message = Protocol.receive(client_socket)
 
                 if client_message is None:
                     break
 
-                print(f"client say: {client_message}")
+                print("Client:", client_message)
 
-                response = self.__process(client_message)
+                # עיבוד ההודעה
+                response_data = self.__process(client_message)
 
-                client_socket.sendall((response + "\n").encode("utf-8"))
+                # יצירת הודעת תשובה
+                response = ProtocolMessage(
+                    "ECHO" if client_message.command != "EXIT"
+                    else "EXIT",
+                    response_data
+                )
 
-                if client_message.strip().upper() == "EXIT":
+                # שליחת התשובה
+                Protocol.send(client_socket, response)
+
+                if client_message.command == "EXIT":
                     break
 
-        except (ConnectionAbortedError, ConnectionResetError):
-            pass
+        except (ProtocolError, ConnectionError) as e:
+            print("Communication error:", e)
 
+    def __process(self, message):
 
-
-    def __process(self, msg: str) -> str:
-        parts = msg.split(" ", 1)
-        command = parts[0].upper()
-        data = parts[1] if len(parts) > 1 else ""
+        command = message.command
+        data = message.data
 
         if command == "TIME":
             return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -80,10 +90,7 @@ class NetworkServer:
         elif command == "EXIT":
             return "BYE"
 
-        else:
-            return "ERROR"
-
 
 if __name__ == "__main__":
-    server = NetworkServer("0.0.0.0", 8000)
+    server = NetworkServer("127.0.0.1", 8000)
     server.start()

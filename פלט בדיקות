@@ -1,0 +1,11 @@
+collected 6 items
+
+test_protocol.py::test_commands_encoding_decoding PASSED                                                                                                                                                                     [ 16%]
+test_protocol.py::test_user_input_parsing PASSED                                                                                                                                                                             [ 33%]
+test_protocol.py::test_error_handling_unknown_command PASSED                                                                                                                                                                 [ 50%]
+test_protocol.py::test_error_handling_invalid_separator PASSED                                                                                                                                                               [ 66%]
+test_protocol.py::test_error_handling_missing_separator PASSED                                                                                                                                                               [ 83%]
+test_protocol.py::test_socketpair_communication PASSED                                                                                                                                                                       [100%]
+
+======================================================================================================== 6 passed in 0.03s ========================================================================================================
+PS C:\Users\cyber\PycharmProjects\404_Girls_project>
