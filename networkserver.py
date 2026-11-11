@@ -1,4 +1,3 @@
-
 import socket
 from datetime import datetime
 
@@ -54,15 +53,11 @@ class NetworkServer:
 
                 print("Client:", client_message)
 
-                # עיבוד ההודעה
-                response_data = self.__process(client_message)
+                # עיבוד ההודעה לקבלת סוג התגובה והתוכן
+                response_cmd, response_data = self.__process(client_message)
 
-                # יצירת הודעת תשובה
-                response = ProtocolMessage(
-                    "ECHO" if client_message.command != "EXIT"
-                    else "EXIT",
-                    response_data
-                )
+                # יצירת הודעת תשובה עם סוג הפקודה המתאים
+                response = ProtocolMessage(response_cmd, response_data)
 
                 # שליחת התשובה
                 Protocol.send(client_socket, response)
@@ -79,16 +74,20 @@ class NetworkServer:
         data = message.data
 
         if command == "TIME":
-            return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            return "TIME", datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         elif command == "ECHO":
-            return data
+            return "ECHO", data
 
         elif command == "PING":
-            return "PONG"
+            return "PING", "PONG"
 
         elif command == "EXIT":
-            return "BYE"
+            return "EXIT", "BYE"
+
+        else:
+            # הערת מורה (1 + 2): טיפול בפקודה לא מוכרת והחזרת הודעת ERROR ספציפית
+            return "ERROR", f"Unknown command: {command}"
 
 
 if __name__ == "__main__":
