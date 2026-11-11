@@ -1,5 +1,6 @@
 from Protocol import ProtocolError
 
+
 class ProtocolMessage:
     """מחלקת המייצגת הודעה בפרוטוקול התקשורת של CyberVault.
     אחראית על ולידציה, קידוד ופענוח של מבנה ההודעה (COMMAND|data).
@@ -7,7 +8,7 @@ class ProtocolMessage:
 
     SEPARATOR = "|"
     ENCODING = "utf-8"
-    VALID_COMMANDS = {"TIME", "ECHO", "PING", "EXIT"} # נשאר לתיעוד, אך כבר לא חוסם פקודות אחרות
+    VALID_COMMANDS = {"TIME", "ECHO", "PING", "EXIT"} # רשימה לתיעוד בלבד (אינה חוסמת פקודות בלקוח)
 
     def __init__(self, command, data=""):
         if not isinstance(command, str):
@@ -16,8 +17,6 @@ class ProtocolMessage:
             raise ProtocolError("Data must be a string")
 
         normalized_command = command.upper()
-
-        # הערת מורה (1): הוסרה החסימה של פקודות לא מוכרות כדי לתת לשרת להחליט כיצד להגיב.
 
         if ProtocolMessage.SEPARATOR in normalized_command:
             raise ProtocolError("Command cannot contain the separator character")
@@ -55,7 +54,7 @@ class ProtocolMessage:
 
         parts = decoded_str.split(cls.SEPARATOR, 1)
 
-        # הוסף בעקבות הערת מורה (3): בדיקה שהמפריד אכן היה קיים בהודעה
+        # בדיקה שהתו המפריד אכן היה קיים בהודעה
         if len(parts) < 2:
             raise ProtocolError("Invalid message format: missing separator '|'")
 
