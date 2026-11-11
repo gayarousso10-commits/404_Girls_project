@@ -3,7 +3,7 @@ from Protocol import ProtocolError
 
 class ProtocolMessage:
     """מחלקת המייצגת הודעה בפרוטוקול התקשורת של CyberVault.
-    אחראית על ולידציה, קידוד ופענוח של מבנה ההודעה (COMMAND|data).
+    אחראית על קידוד ופענוח של מבנה ההודעה (COMMAND|data).
     """
 
     SEPARATOR = "|"
