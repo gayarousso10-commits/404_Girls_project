@@ -1,5 +1,4 @@
-import socket
-
+from typing import Literal
 
 class ProtocolError(Exception):
     """מחלקת חריגה ייעודית לפרוטוקול התקשורת."""
@@ -8,8 +7,10 @@ class ProtocolError(Exception):
 
 class Protocol:
     HEADER_SIZE = 4
-    BYTE_ORDER = "big"
+    BYTE_ORDER: Literal["little", "big"] = "big"
     MAX_LENGTH = 1024 * 1024  # 1MB
+    COMMANDS = ["PING", "ECHO", "TIME", "EXIT", "CLIENTS", "ERROR", "PONG", "BYE"]
+    COMMANDS_WITH_DATA = ["ECHO"]
 
     @staticmethod
     def _recv_exact(sock, n):
@@ -57,7 +58,7 @@ class Protocol:
             return None
 
         length = int.from_bytes(header, Protocol.BYTE_ORDER)
-        if length > Protocol.MAX_LENGTH:
+        if length <= 0 or length > Protocol.MAX_LENGTH:
             raise ProtocolError(
                 f"Invalid message length received in header: {length}"
             )
