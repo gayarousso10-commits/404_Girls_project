@@ -38,13 +38,13 @@ class ClientHandler(threading.Thread):
                 # קבלת הודעה דרך הפרוטוקול
                 msg = Protocol.receive(self.__sock)
 
+                # בדיקה האם התקבלה הוראת עצירה מהשרת
+                if not self.__is_running:
+                    break
+
                 # בדיקה האם הלקוח התנתק
                 if msg is None:
                     print(f"[{self.name}] Client closed connection.")
-                    break
-
-                # בדיקה האם התקבלה הוראת עצירה מהשרת
-                if not self.__is_running:
                     break
 
                 print(
@@ -119,8 +119,12 @@ class ClientHandler(threading.Thread):
             Protocol.send(self.__sock, message)
             return True
 
+        except OSError as e:
+            print(f"[{self.name}] Socket error while sending reply: {e}")
+            return False
+
         except Exception as e:
-            print(f"[{self.name}] Failed to send reply: {e}")
+            print(f"[{self.name}] Unexpected error while sending reply: {e}")
             return False
 
     def stop(self):
