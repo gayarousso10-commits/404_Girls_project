@@ -1,4 +1,5 @@
-from Protocol import ProtocolError
+from Protocol import Protocol, ProtocolError
+
 
 class ProtocolMessage:
     """מחלקת המייצגת הודעה בפרוטוקול התקשורת של CyberVault.
@@ -7,7 +8,7 @@ class ProtocolMessage:
 
     SEPARATOR = "|"
     ENCODING = "utf-8"
-    VALID_COMMANDS = {"TIME", "ECHO", "PING", "EXIT"}
+    VALID_COMMANDS = set(Protocol.COMMANDS)
 
     def __init__(self, command, data=""):
         if not isinstance(command, str):
@@ -81,6 +82,16 @@ class ProtocolMessage:
 
         command = parts[0]
         data = parts[1] if len(parts) > 1 else ""
+
+        upper_cmd = command.upper()
+
+        # בדיקה 1: אם הפקודה דורשת נתונים (כמו ECHO), אבל data ריק -> שגיאה!
+        if upper_cmd in Protocol.COMMANDS_WITH_DATA and not data:
+            raise ProtocolError(f"Command '{upper_cmd}' requires data")
+
+        # בדיקה 2: אם הפקודה לא דורשת נתונים (כמו PING), אבל המשתמש כן כתב משהו -> שגיאה!
+        if upper_cmd not in Protocol.COMMANDS_WITH_DATA and data:
+            raise ProtocolError(f"Command '{upper_cmd}' does not accept data")
 
         return cls(command, data)
 
