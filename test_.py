@@ -1,28 +1,28 @@
 import socket
 import threading
 import time
-# from types import SimpleNamespace
+from types import SimpleNamespace
 import pytest
 
 from networkserver import NetworkServer
 from networkclient import NetworkClient
 from Protocol import Protocol, ProtocolError
 from ProtocolMessage import ProtocolMessage
-# from GradioClientUI import GradioClientUI
+from GradioClientUI import GradioClientUI
 
 IP = "127.0.0.1"
 PORT = 8055
 
 
-# def _call_gradio_method(ui, name_base, *args):
-#     """תמיכה הן בשם פרטי (_GradioClientUI__name) והן בשם מוגן (_name) לפי ה-UML."""
-#     mangled = f"_GradioClientUI__{name_base}"
-#     protected = f"_{name_base}"
-#     if hasattr(ui, mangled):
-#         return getattr(ui, mangled)(*args)
-#     if hasattr(ui, protected):
-#         return getattr(ui, protected)(*args)
-#     raise AttributeError(f"Method {protected} / {mangled} not found on GradioClientUI")
+def _call_gradio_method(ui, name_base, *args):
+    """תמיכה הן בשם פרטי (_GradioClientUI__name) והן בשם מוגן (_name) לפי ה-UML."""
+    mangled = f"_GradioClientUI__{name_base}"
+    protected = f"_{name_base}"
+    if hasattr(ui, mangled):
+        return getattr(ui, mangled)(*args)
+    if hasattr(ui, protected):
+        return getattr(ui, protected)(*args)
+    raise AttributeError(f"Method {protected} / {mangled} not found on GradioClientUI")
 
 
 @pytest.fixture(scope="module")
@@ -252,76 +252,76 @@ def test_09_invalid_message_protocol_error(server):
         time.sleep(0.2)
 
 
-# def test_10_gradio_two_separate_sessions(server):
-#     """10. Gradio: שני sessions נפרדים -> שני חיבורים עצמאיים."""
-#     ui = GradioClientUI(IP, PORT)
-#     req1 = SimpleNamespace(session_hash="session_1")
-#     req2 = SimpleNamespace(session_hash="session_2")
-#
-#     try:
-#         _call_gradio_method(ui, "connect", IP, PORT, "TIME", [], req1)
-#         _call_gradio_method(ui, "connect", IP, PORT, "TIME", [], req2)
-#         time.sleep(0.15)
-#
-#         assert server.client_count() == 2
-#     finally:
-#         _call_gradio_method(ui, "disconnect", "TIME", [], req1)
-#         _call_gradio_method(ui, "disconnect", "TIME", [], req2)
-#         time.sleep(0.2)
-#
-#
-# def test_11_gradio_disconnect_one_session_other_continues(server):
-#     """11. Gradio: ניתוק session אחד -> השני ממשיך לפעול."""
-#     ui = GradioClientUI(IP, PORT)
-#     req1 = SimpleNamespace(session_hash="session_a")
-#     req2 = SimpleNamespace(session_hash="session_b")
-#
-#     try:
-#         _call_gradio_method(ui, "connect", IP, PORT, "PING", [], req1)
-#         _call_gradio_method(ui, "connect", IP, PORT, "PING", [], req2)
-#
-#         _call_gradio_method(ui, "disconnect", "PING", [], req1)
-#         out2 = _call_gradio_method(ui, "send", "PING", "", [], req2)
-#
-#         assert out2[0] == "Connected"
-#         assert "PONG" in str(out2[6][-1])
-#     finally:
-#         _call_gradio_method(ui, "disconnect", "PING", [], req2)
-#         time.sleep(0.2)
-#
-#
-# def test_12_gradio_command_change_data_field(server):
-#     """12. Gradio: שינוי פקודה -> שדה נתונים מותאם."""
-#     ui = GradioClientUI(IP, PORT)
-#     req = SimpleNamespace(session_hash="session_cmd")
-#     try:
-#         _call_gradio_method(ui, "connect", IP, PORT, "TIME", [], req)
-#
-#         try:
-#             echo_update = _call_gradio_method(ui, "on_command_change", "ECHO", req)
-#             ping_update = _call_gradio_method(ui, "on_command_change", "PING", req)
-#         except TypeError:
-#             echo_update = _call_gradio_method(ui, "on_command_change", "ECHO")
-#             ping_update = _call_gradio_method(ui, "on_command_change", "PING")
-#
-#         assert echo_update["interactive"] is True
-#         assert ping_update["interactive"] is False
-#     finally:
-#         _call_gradio_method(ui, "disconnect", "PING", [], req)
-#         time.sleep(0.2)
-#
-#
-# def test_13_gradio_connection_error_friendly_message():
-#     """13. Gradio: שגיאת חיבור -> הודעת שגיאה מובנת ללא Traceback."""
-#     ui = GradioClientUI(IP, 8099)
-#     req = SimpleNamespace(session_hash="session_err")
-#
-#     out = _call_gradio_method(ui, "connect", IP, 8099, "TIME", [], req)
-#     status = out[0]
-#     last_msg = str(out[6][-1])
-#
-#     assert "Disconnected" in status
-#     assert "Traceback" not in last_msg
+def test_10_gradio_two_separate_sessions(server):
+    """10. Gradio: שני sessions נפרדים -> שני חיבורים עצמאיים."""
+    ui = GradioClientUI(IP, PORT)
+    req1 = SimpleNamespace(session_hash="session_1")
+    req2 = SimpleNamespace(session_hash="session_2")
+
+    try:
+        _call_gradio_method(ui, "connect", IP, PORT, "TIME", [], req1)
+        _call_gradio_method(ui, "connect", IP, PORT, "TIME", [], req2)
+        time.sleep(0.15)
+
+        assert server.client_count() == 2
+    finally:
+        _call_gradio_method(ui, "disconnect", "TIME", [], req1)
+        _call_gradio_method(ui, "disconnect", "TIME", [], req2)
+        time.sleep(0.2)
+
+
+def test_11_gradio_disconnect_one_session_other_continues(server):
+    """11. Gradio: ניתוק session אחד -> השני ממשיך לפעול."""
+    ui = GradioClientUI(IP, PORT)
+    req1 = SimpleNamespace(session_hash="session_a")
+    req2 = SimpleNamespace(session_hash="session_b")
+
+    try:
+        _call_gradio_method(ui, "connect", IP, PORT, "PING", [], req1)
+        _call_gradio_method(ui, "connect", IP, PORT, "PING", [], req2)
+
+        _call_gradio_method(ui, "disconnect", "PING", [], req1)
+        out2 = _call_gradio_method(ui, "send", "PING", "", [], req2)
+
+        assert out2[0] == "Connected"
+        assert "PONG" in str(out2[6][-1])
+    finally:
+        _call_gradio_method(ui, "disconnect", "PING", [], req2)
+        time.sleep(0.2)
+
+
+def test_12_gradio_command_change_data_field(server):
+    """12. Gradio: שינוי פקודה -> שדה נתונים מותאם."""
+    ui = GradioClientUI(IP, PORT)
+    req = SimpleNamespace(session_hash="session_cmd")
+    try:
+        _call_gradio_method(ui, "connect", IP, PORT, "TIME", [], req)
+
+        try:
+            echo_update = _call_gradio_method(ui, "on_command_change", "ECHO", req)
+            ping_update = _call_gradio_method(ui, "on_command_change", "PING", req)
+        except TypeError:
+            echo_update = _call_gradio_method(ui, "on_command_change", "ECHO")
+            ping_update = _call_gradio_method(ui, "on_command_change", "PING")
+
+        assert echo_update["interactive"] is True
+        assert ping_update["interactive"] is False
+    finally:
+        _call_gradio_method(ui, "disconnect", "PING", [], req)
+        time.sleep(0.2)
+
+
+def test_13_gradio_connection_error_friendly_message():
+    """13. Gradio: שגיאת חיבור -> הודעת שגיאה מובנת ללא Traceback."""
+    ui = GradioClientUI(IP, 8099)
+    req = SimpleNamespace(session_hash="session_err")
+
+    out = _call_gradio_method(ui, "connect", IP, 8099, "TIME", [], req)
+    status = out[0]
+    last_msg = str(out[6][-1])
+
+    assert "Disconnected" in status
+    assert "Traceback" not in last_msg
 
 
 def test_14_server_shutdown_releases_resources():
@@ -435,23 +435,23 @@ def test_18_protocol_partial_disconnect_raises_protocol_error():
         b2.close()
 
 
-# def test_19_network_client_and_gradio_share_server(server):
-#     """19. לקוח NetworkClient ולקוח GradioClientUI פועלים יחד מול אותו שרת."""
-#     nc = NetworkClient(IP, PORT)
-#     ui = GradioClientUI(IP, PORT)
-#     req = SimpleNamespace(session_hash="session_mix")
-#
-#     try:
-#         _call_gradio_method(ui, "connect", IP, PORT, "CLIENTS", [], req)
-#         time.sleep(0.15)
-#
-#         res = nc.request(ProtocolMessage("CLIENTS"))
-#         assert res.command == "CLIENTS"
-#         assert res.data == "2"
-#     finally:
-#         nc.close()
-#         _call_gradio_method(ui, "disconnect", "CLIENTS", [], req)
-#         time.sleep(0.2)
+def test_19_network_client_and_gradio_share_server(server):
+    """19. לקוח NetworkClient ולקוח GradioClientUI פועלים יחד מול אותו שרת."""
+    nc = NetworkClient(IP, PORT)
+    ui = GradioClientUI(IP, PORT)
+    req = SimpleNamespace(session_hash="session_mix")
+
+    try:
+        _call_gradio_method(ui, "connect", IP, PORT, "CLIENTS", [], req)
+        time.sleep(0.15)
+
+        res = nc.request(ProtocolMessage("CLIENTS"))
+        assert res.command == "CLIENTS"
+        assert res.data == "2"
+    finally:
+        nc.close()
+        _call_gradio_method(ui, "disconnect", "CLIENTS", [], req)
+        time.sleep(0.2)
 
 
 def test_20_network_client_timeout_closes_and_blocks_next_request():
@@ -524,15 +524,15 @@ def test_21_network_client_thread_safe_concurrent_requests(server):
         time.sleep(0.2)
 
 
-# def test_22_gradio_on_unload_cleans_session(server):
-#     """22. ניקוי session בעת unload / סגירת לשונית מפנה את החיבור בשרת."""
-#     ui = GradioClientUI(IP, PORT)
-#     req = SimpleNamespace(session_hash="session_unload")
-#
-#     _call_gradio_method(ui, "connect", IP, PORT, "PING", [], req)
-#     time.sleep(0.15)
-#     assert server.client_count() == 1
-#
-#     _call_gradio_method(ui, "on_unload", req)
-#     time.sleep(0.2)
-#     assert server.client_count() == 0
+def test_22_gradio_on_unload_cleans_session(server):
+    """22. ניקוי session בעת unload / סגירת לשונית מפנה את החיבור בשרת."""
+    ui = GradioClientUI(IP, PORT)
+    req = SimpleNamespace(session_hash="session_unload")
+
+    _call_gradio_method(ui, "connect", IP, PORT, "PING", [], req)
+    time.sleep(0.15)
+    assert server.client_count() == 1
+
+    _call_gradio_method(ui, "on_unload", req)
+    time.sleep(0.2)
+    assert server.client_count() == 0
