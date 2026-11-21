@@ -10,10 +10,11 @@ from networkclient import NetworkClient
 class GradioClientUI:
     """ממשק משתמש גרפי רב-משתמשים בדפדפן עבור לקוח תקשורת TCP."""
 
-    # פקודות שהמשתמש רשאי לבחור (מסנן תשובות מערכת פנימיות כמו PONG, BYE, ERROR)
+    # פקודות שהמשתמש רשאי לבחור (מסנן תשובות מערכת פנימיות כמו PONG,"BYE", ERROR)
     USER_COMMANDS = [
         cmd for cmd in Protocol.COMMANDS
-        if cmd not in ("PONG", "BYE", "ERROR")
+        if cmd not in ("PONG","BYE", "ERROR")
+
     ]
 
     def __init__(self, ip: str = "127.0.0.1", port: int = 8000):
@@ -22,11 +23,10 @@ class GradioClientUI:
         self.__default_port: int = port
         self.__clients: dict[str, NetworkClient] = {}
         self.__lock: threading.Lock = threading.Lock()
-        self.__theme, self.__css = self.__build_style()
         self.demo: gr.Blocks = self.__build()
 
-    def __build_style(self):
-        """בניית ה-Theme וה-CSS עבור ממשק Gradio."""
+    def launch(self, **kwargs):
+        """הפעלת ממשק Gradio בעיצוב Cyber / Top Secret כהה וזוהר."""
         cyber_theme = gr.themes.Base(
             primary_hue="emerald",
             secondary_hue="cyan",
@@ -108,7 +108,7 @@ class GradioClientUI:
             height: auto !important;
             min-height: 82px !important;
         }
-        /* כפתור Disconnect במצב לא פעיל (אדום כהה מעומעם) */
+       /* כפתור Disconnect במצב לא פעיל (אדום כהה מעומעם) */
         #disconnect-btn, #disconnect-btn > button, #disconnect-btn:disabled, #disconnect-btn > button:disabled {
             background: #ba6060 !important;
             background-color: #ba6060 !important;
@@ -131,13 +131,7 @@ class GradioClientUI:
             border: 1px solid #10b98166 !important;
         }
         """
-        return cyber_theme, cyber_css
-
-    def launch(self, **kwargs):
-        """הפעלת ממשק Gradio בעיצוב Cyber / Top Secret כהה וזוהר."""
-        kwargs.setdefault("theme", self.__theme)
-        kwargs.setdefault("css", self.__css)
-        self.demo.launch(**kwargs)
+        self.demo.launch(theme=cyber_theme, css=cyber_css, **kwargs)
 
     # -------------------------------------------------------------------------
     # ניהול Session ולקוחות (Thread-Safe)
@@ -164,7 +158,7 @@ class GradioClientUI:
         if client is not None:
             client.close()
 
-    def __on_unload(self, request: gr.Request | None = None):
+    def __on_unload(self, request: gr.Request = None):
         """ניקוי משאבים אוטומטי בעת סגירת לשונית או רענון הדף."""
         client = self.__get_client(request)
         if client is not None and client.connected:
@@ -198,19 +192,11 @@ class GradioClientUI:
             return f"Network error: {error}"
         return f"Unexpected error: {error}"
 
-    def __data_placeholder(self, command: str | None, requires_data: bool) -> str:
-        """החזרת טקסט מנחה מתאים לשדה הדאטה בהתאם לפקודה."""
-        if not requires_data:
-            return "No data required for this command"
-        if command == "ECHO":
-            return "Enter text for ECHO..."
-        return f"Enter data for {command}..." if command else "Enter payload data..."
-
     def __view(
         self,
         history: list,
         client: NetworkClient | None,
-        command: str | None,
+        command: str,
         clear_data: bool = False,
         status_override: str | None = None
     ) -> list:
@@ -220,8 +206,7 @@ class GradioClientUI:
         [status_box, connect_btn, disconnect_btn, command_dd, data_tb, send_btn, chatbot]
         """
         is_connected = client is not None and client.connected
-        requires_data = bool(command and command in Protocol.COMMANDS_WITH_DATA)
-        placeholder_text = self.__data_placeholder(command, requires_data)
+        requires_data = command in Protocol.COMMANDS_WITH_DATA
 
         if status_override is not None:
             status_text = status_override
@@ -234,12 +219,12 @@ class GradioClientUI:
             data_update = gr.update(
                 interactive=(is_connected and requires_data),
                 value="",
-                placeholder=placeholder_text
+                placeholder="Enter text for ECHO..." if requires_data else "No data required for this command"
             )
         else:
             data_update = gr.update(
                 interactive=(is_connected and requires_data),
-                placeholder=placeholder_text
+                placeholder="Enter text for ECHO..." if requires_data else "No data required for this command"
             )
 
         return [
@@ -260,7 +245,7 @@ class GradioClientUI:
         self,
         ip: str,
         port: int | float,
-        command: str | None,
+        command: str,
         history: list,
         request: gr.Request
     ) -> list:
@@ -303,7 +288,7 @@ class GradioClientUI:
 
     def __disconnect(
         self,
-        command: str | None,
+        command: str,
         history: list,
         request: gr.Request
     ) -> list:
@@ -316,8 +301,7 @@ class GradioClientUI:
                 exit_msg = ProtocolMessage("EXIT", "")
                 history = self.__add(history, "user", "EXIT")
                 reply = client.request(exit_msg)
-                reply_text = f"{reply.command}: {reply.data}" if reply.data else reply.command
-                history = self.__add(history, "assistant", reply_text)
+                history = self.__add(history, "assistant", f"{reply.command}: {reply.data}")
             except Exception as e:
                 history = self.__add(history, "assistant", f"⚠️ {self.__describe(e)}")
 
@@ -329,7 +313,7 @@ class GradioClientUI:
 
     def __send(
         self,
-        command: str | None,
+        command: str,
         data: str,
         history: list,
         request: gr.Request
@@ -344,16 +328,10 @@ class GradioClientUI:
             history = self.__add(history, "assistant", f"⚠️ {err_msg}")
             return self.__view(history, None, command, status_override="Disconnected")
 
-        if not command:
-            err_msg = "Please select a command first."
-            history = self.__add(history, "assistant", f"⚠️ {err_msg}")
-            return self.__view(history, client, command, status_override="Connected")
-
-        requires_data = command in Protocol.COMMANDS_WITH_DATA
-        clean_data = (data or "") if requires_data else ""
+        clean_data = (data or "") if command in Protocol.COMMANDS_WITH_DATA else ""
 
         # בדיקת תקינות קלט לפני שליחה לשרת
-        if requires_data and not clean_data.strip():
+        if command in Protocol.COMMANDS_WITH_DATA and not clean_data.strip():
             err_msg = f"Command '{command}' requires data in the Data field."
             history = self.__add(history, "assistant", f"⚠️ {err_msg}")
             return self.__view(history, client, command, status_override="Connected")
@@ -365,14 +343,14 @@ class GradioClientUI:
             history = self.__add(history, "assistant", f"⚠️ {err_desc}")
             return self.__view(history, client, command, status_override="Connected")
 
-        # הצגת הבקשה בצד המשתמש
+        # הצגת הבקשה בצד ימין (user)
         user_display = f"{command} {clean_data}".strip()
         history = self.__add(history, "user", user_display)
 
         try:
             response = client.request(msg)
 
-            # עיצוב התשובה מהשרת
+            # עיצוב התשובה בצד שמאל (assistant)
             if response.data:
                 bot_display = f"{response.command}: {response.data}"
             else:
@@ -402,16 +380,16 @@ class GradioClientUI:
                 status_override="Disconnected (Connection lost)"
             )
 
-    def __on_command_change(self, command: str | None, request: gr.Request):
+    def __on_command_change(self, command: str, request: gr.Request):
         """עדכון זמינות שדה Data כאשר המשתמש מחליף פקודה."""
         client = self.__get_client(request)
         is_connected = client is not None and client.connected
-        requires_data = bool(command and command in Protocol.COMMANDS_WITH_DATA)
+        requires_data = command in Protocol.COMMANDS_WITH_DATA
 
         return gr.update(
             interactive=(is_connected and requires_data),
             value="",
-            placeholder=self.__data_placeholder(command, requires_data)
+            placeholder="Enter text for ECHO..." if requires_data else "No data required for this command"
         )
 
     def __clear_log(self) -> list:
@@ -424,8 +402,7 @@ class GradioClientUI:
 
     def __build(self) -> gr.Blocks:
         """בניית רכיבי המסך בעיצוב CyberVault Top Secret."""
-        choices = list(self.USER_COMMANDS)
-        default_cmd = "TIME" if "TIME" in choices else (choices[0] if choices else None)
+        default_cmd = "TIME" if "TIME" in self.USER_COMMANDS else self.USER_COMMANDS[0]
 
         with gr.Blocks(title="CYBERVAULT // SECURE TERMINAL") as demo:
             # כותרת Top Secret זוהרת
@@ -439,17 +416,17 @@ class GradioClientUI:
                     """
                     ### איך המערכת עובדת?
                     ממשק זה הוא **לקוח TCP** (צד המשתמש) המתחבר לשרת מרובה־לקוחות (`NetworkServer`).
-- **הפרדה בין לשוניות:** כל לשונית בדפדפן מקבלת מזהה ייחודי (`session_hash`) וחיבור TCP עצמאי משלה (`NetworkClient`), כך שלקוחות שונים יכולים לעבוד במקביל מבלי להפריע זה לזה.
-- **שכבות המערכת:** הממשק (Gradio) מעביר בקשות ללוגיקת הלקוח (`NetworkClient`), שמקודדת אותן לפי חוזה התקשורת (`Protocol` / `ProtocolMessage`) ושולחת לשרת.
+                    * **הפרדה בין לשוניות:** כל לשונית בדפדפן מקבלת מזהה ייחודי (`session_hash`) וחיבור TCP עצמאי משלה (`NetworkClient`), כך שלקוחות שונים יכולים לעבוד במקביל מבלי להפריע זה לזה.
+                    * **שכבות המערכת:** הממשק (Gradio) מעביר בקשות ללוגיקת הלקוח (`NetworkClient`), שמקודדת אותן לפי חוזה התקשורת (`Protocol` / `ProtocolMessage`) ושולחת לשרת.
 
                     ---
 
                     ### פירוט הפקודות הזמינות:
-- **`PING`** — בדיקת תקינות וזמינות החיבור מול השרת (השרת מחזיר `PONG`).
-- **`ECHO`** — שליחת טקסט חופשי אל השרת וקבלתו בחזרה (דורש הזנת טקסט בשדה **Data**).
-- **`TIME`** — קבלת התאריך והשעה הנוכחיים מהשרת.
-- **`CLIENTS`** — הצגת מספר הלקוחות המחוברים כרגע לשרת במקביל.
-- **`EXIT`** — שליחת בקשת יציאה מסודרת לשרת (השרת מחזיר `Goodbye`) וסגירת החיבור של הלשונית הנוכחית.
+                    * **`PING`** — בדיקת תקינות וזמינות החיבור מול השרת (השרת מחזיר `PONG`).
+                    * **`ECHO`** — שליחת טקסט חופשי אל השרת וקבלתו בחזרה (דורש הזנת טקסט בשדה **Data**).
+                    * **`TIME`** — קבלת התאריך והשעה הנוכחיים מהשרת.
+                    * **`CLIENTS`** — הצגת מספר הלקוחות המחוברים כרגע לשרת במקביל.
+                    * **`EXIT`** — שליחת בקשת יציאה מסודרת לשרת (השרת מחזיר `Goodbye`) וסגירת החיבור של הלשונית הנוכחית.
                     """,
                     elem_classes="rtl-text"
                 )
@@ -494,7 +471,7 @@ class GradioClientUI:
                 with gr.Row():
                     command_dd = gr.Dropdown(
                         label="COMMAND",
-                        choices=choices,
+                        choices=self.USER_COMMANDS,
                         value=default_cmd,
                         interactive=False,
                         scale=1
@@ -508,7 +485,6 @@ class GradioClientUI:
                     send_btn = gr.Button("📡 TRANSMIT", variant="primary", interactive=False, scale=1)
 
             clear_btn = gr.Button("🧹 PURGE LOG", size="sm")
-
             # רשימת הפקדים המשותפת לעדכוני מצב
             ui_outputs = [
                 status_box,
