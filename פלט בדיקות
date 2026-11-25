@@ -1,11 +1,32 @@
-collected 6 items
+(.venv) PS C:\Users\cyber\PycharmProjects\404_Girls_project> pytest test_.py -v
+======================================================================================================= test session starts =======================================================================================================
+platform win32 -- Python 3.10.0, pytest-8.3.4, pluggy-1.7.0 -- C:\Users\cyber\PycharmProjects\PythonProject1\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\cyber\PycharmProjects\404_Girls_project
+plugins: anyio-4.16.0
+collected 22 items                                                                                                                                                                                                                 
 
-test_protocol.py::test_commands_encoding_decoding PASSED                                                                                                                                                                     [ 16%]
-test_protocol.py::test_user_input_parsing PASSED                                                                                                                                                                             [ 33%]
-test_protocol.py::test_error_handling_unknown_command PASSED                                                                                                                                                                 [ 50%]
-test_protocol.py::test_error_handling_invalid_separator PASSED                                                                                                                                                               [ 66%]
-test_protocol.py::test_error_handling_missing_separator PASSED                                                                                                                                                               [ 83%]
-test_protocol.py::test_socketpair_communication PASSED                                                                                                                                                                       [100%]
+test_.py::test_01_three_clients_ping PASSED                                                                                                                                                                                  [  4%]
+test_.py::test_02_parallel_echo_and_time PASSED                                                                                                                                                                              [  9%]
+test_.py::test_03_clients_count_three PASSED                                                                                                                                                                                 [ 13%]
+test_.py::test_04_exit_single_client_others_continue PASSED                                                                                                                                                                  [ 18%]
+test_.py::test_05_clients_after_handler_removed PASSED                                                                                                                                                                       [ 22%]
+test_.py::test_06_sudden_disconnect PASSED                                                                                                                                                                                   [ 27%]
+test_.py::test_07_unknown_command_returns_error PASSED                                                                                                                                                                       [ 31%]
+test_.py::test_08_split_tcp_message PASSED                                                                                                                                                                                   [ 36%]
+test_.py::test_09_invalid_message_protocol_error PASSED                                                                                                                                                                      [ 40%]
+test_.py::test_10_gradio_two_separate_sessions PASSED                                                                                                                                                                        [ 45%] 
+test_.py::test_11_gradio_disconnect_one_session_other_continues PASSED                                                                                                                                                       [ 50%] 
+test_.py::test_12_gradio_command_change_data_field PASSED                                                                                                                                                                    [ 54%] 
+test_.py::test_13_gradio_connection_error_friendly_message PASSED                                                                                                                                                            [ 59%] 
+test_.py::test_14_server_shutdown_releases_resources PASSED                                                                                                                                                                  [ 63%] 
+test_.py::test_15_server_restart_same_port PASSED                                                                                                                                                                            [ 68%] 
+test_.py::test_16_accept_new_client_while_first_idle PASSED                                                                                                                                                                  [ 72%] 
+test_.py::test_17_protocol_header_zero_or_exceeds_max_length PASSED                                                                                                                                                          [ 77%] 
+test_.py::test_18_protocol_partial_disconnect_raises_protocol_error PASSED                                                                                                                                                   [ 81%] 
+test_.py::test_19_network_client_and_gradio_share_server PASSED                                                                                                                                                              [ 86%] 
+test_.py::test_20_network_client_timeout_closes_and_blocks_next_request PASSED                                                                                                                                               [ 90%] 
+test_.py::test_21_network_client_thread_safe_concurrent_requests PASSED                                                                                                                                                      [ 95%] 
+test_.py::test_22_gradio_on_unload_cleans_session PASSED                                                                                                                                                                     [100%] 
 
-======================================================================================================== 6 passed in 0.03s ========================================================================================================
-PS C:\Users\cyber\PycharmProjects\404_Girls_project>
+======================================================================================================= 22 passed in 12.87s ======================================================================================================= 
